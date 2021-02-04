@@ -7,18 +7,29 @@ Parameters:
     Default: 'ExchangeProd'
 
 Resources:
+
+ # Api gateway
+  danielAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: myBetApi
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
   placeOrderFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: exchangeAPIsam/
+      CodeUri: src/handlers/
       Handler: placeOrder.handler
       Runtime: nodejs12.x
+      RestApiId: !Ref danielAPI
       Policies:
         - AmazonDynamoDBFullAccess:
-            TableName: !Ref TableName
+            TableName: !Ref DynamoDBTable
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          TABLE_NAME: !Ref DynamoDBTable
       Events:
         ExchangeAPIsam:
           Type: Api
@@ -28,15 +39,16 @@ Resources:
   cancelOrdersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: exchangeAPIsam/
+      RestApiId: !Ref danielAPI
+      CodeUri: src/handlers/
       Handler: cancelOrders.handler
       Runtime: nodejs12.x
       Policies:
         - AmazonDynamoDBFullAccess:
-            TableName: !Ref TableName
+            TableName: !Ref DynamoDBTable
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          TABLE_NAME: !Ref DynamoDBTable
       Events:
         ExchangeAPIsam:
           Type: Api
@@ -46,15 +58,16 @@ Resources:
   createNewEventFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: exchangeAPIsam/
+      RestApiId: !Ref danielAPI
+      CodeUri: src/handlers/
       Handler: createNewEvent.handler
       Runtime: nodejs12.x
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref DynamoDBTable
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          TABLE_NAME: !Ref DynamoDBTable
       Events:
         ExchangeAPIsam:
           Type: Api
@@ -64,15 +77,16 @@ Resources:
   getAllEventsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: exchangeAPIsam/
+      RestApiId: !Ref danielAPI
+      CodeUri: src/handlers/
       Handler: getAllEvents.handler
       Runtime: nodejs12.x
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref DynamoDBTable
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          TABLE_NAME: !Ref DynamoDBTable
       Events:
         ExchangeAPIsam:
           Type: Api
@@ -82,15 +96,16 @@ Resources:
   getAllPricesFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: exchangeAPIsam/
+      RestApiId: !Ref danielAPI
+      CodeUri: src/handlers/
       Handler: getAllPrices.handler
       Runtime: nodejs12.x
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref DynamoDBTable
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          TABLE_NAME: !Ref DynamoDBTable
       Events:
         ExchangeAPIsam:
           Type: Api
@@ -100,15 +115,16 @@ Resources:
   getAllOrdersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: exchangeAPIsam/
+      RestApiId: !Ref danielAPI
+      CodeUri: src/handlers/
       Handler: getStakeStatus.handler
       Runtime: nodejs12.x
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref TableName
+            TableName: !Ref DynamoDBTable
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          TABLE_NAME: !Ref DynamoDBTable
       Events:
         ExchangeAPIsam:
           Type: Api
@@ -118,7 +134,7 @@ Resources:
   DynamoDBTable:
     Type: 'AWS::DynamoDB::Table'
     Properties:
-      TableName: !Ref TableName
+      TableName: "DanielsTable"
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
