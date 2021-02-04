@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "API exchangeAPIsam:getAllOrdersFunction",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "template.yml",
+                "logicalId": "getAllOrdersFunction"
+            },
+            "api": {
+                "path": "/",
+                "httpMethod": "get",
+                "payload": {
+                    "json": {}
+                }
+            }
+        }
+    ]
+}
