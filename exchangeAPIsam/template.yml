@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  TableName:
+    Type: String
+    Default: 'ExchangeProd'
+
+Resources:
+  placeOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exchangeAPIsam/
+      Handler: placeOrder.handler
+      Runtime: nodejs12.x
+      Policies:
+        - AmazonDynamoDBFullAccess:
+            TableName: !Ref TableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            Path: /exchange/betting/placeorder
+            Method: post
+  cancelOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exchangeAPIsam/
+      Handler: cancelOrders.handler
+      Runtime: nodejs12.x
+      Policies:
+        - AmazonDynamoDBFullAccess:
+            TableName: !Ref TableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            Path: /exchange/betting/cancelorders
+            Method: delete
+  createNewEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exchangeAPIsam/
+      Handler: createNewEvent.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            Path: /exchange
+            Method: post
+  getAllEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exchangeAPIsam/
+      Handler: getAllEvents.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            Path: /exchange
+            Method: get
+  getAllPricesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exchangeAPIsam/
+      Handler: getAllPrices.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            Path: /exchange/betting/listallprices
+            Method: post
+  getAllOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: exchangeAPIsam/
+      Handler: getStakeStatus.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            Path: /exchange/betting/listcurrentorders
+            Method: post
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      LocalSecondaryIndexes:
+        IndexName: PK-LSI-index
+        KeySchema: 
+        - AttributeName: LSI
+          KeyType: RANGE
+        Projection:
+          ProjectionType: All
+      BillingMode: PAY_PER_REQUEST
