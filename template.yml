@@ -1,0 +1,201 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+
+  tableName:
+    Type: String
+    Default: ExchangeTable
+  apiName:
+    Type: String
+    Default: exchangeAPI
+  cognitoUserPoolName:
+    Type: String
+    Default: exchangeUserPool
+  cognitoUserPoolClientName:
+    Type: String
+    Default: exchangeUserPoolClient
+  environment:
+    Type: String
+    Default: dev
+
+Resources:
+
+  exchangeCognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref cognitoUserPoolName
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireUppercase: true
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+
+  exchangeCognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref exchangeCognitoUserPool
+      ClientName: !Ref cognitoUserPoolClientName
+      GenerateSecret: false
+
+  exchangeAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Ref apiName
+      StageName: !Ref environment
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      Auth:
+        Authorizers:
+          exchangeCognitoAuthorizer:
+            UserPoolArn: !GetAtt "exchangeCognitoUserPool.Arn"
+
+  placeOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/placeOrder/
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref tableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            RestApiId: !Ref exchangeAPI
+            Path: /exchange/betting/placeorder
+            Method: post
+
+  cancelOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/cancelOrder/
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref tableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            RestApiId: !Ref exchangeAPI
+            Path: /exchange/betting/cancelorder
+            Method: delete
+
+  createEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/createEvent/
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref tableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref tableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            RestApiId: !Ref exchangeAPI
+            Path: /exchange
+            Method: post
+
+  listEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/listEvents/
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref tableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref tableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            RestApiId: !Ref exchangeAPI
+            Path: /exchange
+            Method: get
+
+  listPricesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/listPrices/
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref tableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref tableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            RestApiId: !Ref exchangeAPI
+            Path: /exchange/betting/listprices
+            Method: post
+
+  listOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/listOrders/
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref tableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref tableName
+      Events:
+        ExchangeAPIsam:
+          Type: Api
+          Properties:
+            RestApiId: !Ref exchangeAPI
+            Path: /exchange/betting/listorders
+            Method: post
+
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Ref tableName
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: LSI
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      LocalSecondaryIndexes:
+        - IndexName: PK-LSI-index
+          KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: LSI
+            KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST

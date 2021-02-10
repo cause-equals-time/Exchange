@@ -1,12 +1,11 @@
 const AWS = require('aws-sdk');
 const dbc = new AWS.DynamoDB.DocumentClient();
-const exchangeTable = "Exchange";
+const exchangeTable = process.env.TABLE_NAME;
 
 exports.handler = async (event) => {
     
     //const request = JSON.parse(event.body);
     //const userId = request.userId;
-    
     
     let params = {
     TableName : exchangeTable,

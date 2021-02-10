@@ -1,11 +1,10 @@
 const AWS = require('aws-sdk');
 const dbc = new AWS.DynamoDB.DocumentClient();
-const exchangeTable = "Exchange";
+const exchangeTable = process.env.TABLE_NAME;
 
 exports.handler = async (event) => {
     
     const request = JSON.parse(event.body);
-    //const userId = request.userId;
     const ev = request.eventId;
     
     
@@ -27,8 +26,8 @@ try{
     return response(500,err);
   }
 
-return response(200,generatePriceArray(queriedData.Items));
-
+if (queriedData.Items.length>0) return response(200,generatePriceArray(queriedData.Items));
+return response(200,[]);
 };
 
 

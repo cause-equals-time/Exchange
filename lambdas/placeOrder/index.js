@@ -1,12 +1,15 @@
 const AWS = require('aws-sdk');
 const dbc = new AWS.DynamoDB.DocumentClient();
-// const exchangeTable = "Exchange";
 const exchangeTable = process.env.TABLE_NAME;
 
 exports.handler = async (event) => {
   
+  const base64Url = event.headers['X-COG-AUTH'].split('.')[1];
+  const base64 = base64Url.replace('-', '+').replace('_', '/');
+  const decodedData = JSON.parse(Buffer.from(base64, 'base64').toString('binary'));
+  
   const request = JSON.parse(event.body);
-  const userId = request.userId;
+  const userId = decodedData['cognito:username'];
   const ev = request.eventId;
   const side = request.side;
   const oppSideCode = side.length-3;
@@ -66,7 +69,7 @@ let params = {
   try{
     var writeResult = await dbc.transactWrite(consumeStakes(queriedData.Items,bet)).promise();
     console.log(writeResult);
-    return response(200,{eventId:bet.PK, betId:time, side:bet.side, ammountOnQueue:bet.stake});
+    return response(200,{eventId:bet.PK, betId:time, side:bet.side,price:bet.price, stake:bet.stake});
   }
   catch(err){
     console.log(err);

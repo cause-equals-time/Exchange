@@ -1,11 +1,15 @@
 const AWS = require('aws-sdk');
 const dbc = new AWS.DynamoDB.DocumentClient();
-const exchangeTable = "Exchange";
+const exchangeTable = process.env.TABLE_NAME;
 
 exports.handler = async (event) => {
     
+    const base64Url = event.headers['X-COG-AUTH'].split('.')[1];
+    const base64 = base64Url.replace('-', '+').replace('_', '/');
+    const decodedData = JSON.parse(Buffer.from(base64, 'base64').toString('binary'));
+    
     const request = JSON.parse(event.body);
-    const betId = request.userId + "#" + (request.betId || "");
+    const betId = decodedData['cognito:username'] + "#" + (request.betId || "");
 
     let logQueryParams = {
     TableName : exchangeTable,

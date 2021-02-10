@@ -1,8 +1,12 @@
 const AWS = require('aws-sdk');
 const dbc = new AWS.DynamoDB.DocumentClient();
-const exchangeTable = "Exchange";
+const exchangeTable = process.env.TABLE_NAME;
 
 exports.handler = async (event) => {
+
+    const base64Url = event.headers['X-COG-AUTH'].split('.')[1];
+    const base64 = base64Url.replace('-', '+').replace('_', '/');
+    const decodedData = JSON.parse(Buffer.from(base64, 'base64').toString('binary'));
 
     const request = JSON.parse(event.body);
     const time=Date.now();
@@ -12,7 +16,7 @@ exports.handler = async (event) => {
       PK:"event",
       SK:"ev#"+time,
       description:request.description,
-      creator:request.userId
+      creator:decodedData['cognito:username']
     }
   };
   
